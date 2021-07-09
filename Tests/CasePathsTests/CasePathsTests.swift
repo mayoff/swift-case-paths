@@ -8,6 +8,9 @@ private func unwrap<Wrapped>(_ optional: Wrapped?) throws -> Wrapped {
 }
 private struct UnexpectedNil: Error {}
 
+protocol TestProtocol { }
+extension Int: TestProtocol { }
+
 final class CasePathsTests: XCTestCase {
   func testSimplePayload() {
     enum Enum { case payload(Int) }
@@ -334,6 +337,46 @@ final class CasePathsTests: XCTestCase {
       XCTAssertNotNil(intPath.extract(from: .int(42)))
       XCTAssertNotNil(voidPath.extract(from: .void(())))
       XCTAssertNotNil(anyPath.extract(from: .any("Blob")))
+    }
+  }
+
+  func testAssociatedValueIsExistential() {
+    enum Enum {
+        case proto(TestProtocol)
+        case int(Int)
+    }
+
+    let protoPath = /Enum.proto
+    let intPath = /Enum.int
+
+    for _ in 1...2 {
+        XCTAssertNil(protoPath.extract(from: .int(100)))
+        XCTAssertEqual(protoPath.extract(from: .proto(100)) as? Int, 100)
+
+        XCTAssertNil(intPath.extract(from: .proto(100)))
+        XCTAssertEqual(intPath.extract(from: .int(100)), 100)
+    }
+  }
+
+  func testContravariantEmbed() {
+    enum Enum {
+      case p(TestProtocol)
+    }
+
+    // This is intentionally too big to fit in the three-word buffer of a protocol existential, so that it is stored indirectly.
+    struct Conformer: TestProtocol, Equatable {
+      var a, b, c, d: Int
+      init() {
+        (a, b, c, d) = (100, 300, 200, 400)
+      }
+    }
+
+    let path: CasePath<Enum, Conformer> = /Enum.p
+
+    for _ in 1...2 {
+      XCTAssertEqual(
+        path.extract(from: .p(Conformer())),
+        .some(Conformer()))
     }
   }
 
