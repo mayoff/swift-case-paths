@@ -828,4 +828,33 @@ final class CasePathsTests: XCTestCase {
     XCTAssertNil((/Foo.bar).extract(from: opt))
     XCTAssertNil((/Foo.baz).extract(from: opt))
   }
+
+  func testExtractFromOptionalRootWithEmbeddedTagBits() {
+    enum E {
+      case c1(TestObject)
+      case c2(TestObject)
+    }
+
+    let o = TestObject()
+    let c1Path: CasePath<E?, TestObject> = /E.c1
+    let c2Path: CasePath<E?, TestObject> = /E.c2
+
+    func check(_ path: CasePath<E?, TestObject>, _ input: E?, _ expected: TestObject?) {
+      let actual = path.extract(from: input)
+      XCTAssertEqual(actual, expected)
+    }
+
+    for _ in 1...2 {
+      check(c1Path, nil, nil)
+      check(c1Path, .c1(o), o)
+      check(c1Path, .c2(o), nil)
+      check(c2Path, nil, nil)
+      check(c2Path, .c1(o), nil)
+      check(c2Path, .c2(o), o)
+    }
+  }
+}
+
+fileprivate class TestObject: Equatable {
+  static func == (lhs: TestObject, rhs: TestObject) -> Bool { lhs === rhs }
 }
