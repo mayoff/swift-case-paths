@@ -88,6 +88,13 @@ public prefix func / <Root, Value>(
   extract(`case`)
 }
 
+@_disfavoredOverload
+public prefix func / <Root, Value>(
+  case: @escaping (Value) -> Root?
+) -> (Root?) -> Value? {
+  extract(`case`)
+}
+
 /// Returns a void case path for a case with no associated value.
 ///
 /// - Note: This operator is only intended to be used with enum cases that have no associated
